@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kawasaki Ninja Expert — Canada 2025</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #0a0a0a; font-family: 'Courier New', monospace; }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: #0a0a0a; }
+    ::-webkit-scrollbar-thumb { background: #39ff14; border-radius: 2px; }
+
+    /* API Key Screen */
+    #apikey-screen {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: #0a0a0a;
+    }
+    #apikey-box {
+      background: #141414;
+      border: 1px solid #39ff14;
+      border-radius: 4px;
+      padding: 36px 32px;
+      width: 420px;
+      box-shadow: 0 0 30px rgba(57,255,20,0.15);
+    }
+    #apikey-box .logo { font-size: 32px; text-align: center; margin-bottom: 12px; }
+    #apikey-box h2 { color: #39ff14; font-size: 16px; letter-spacing: 3px; text-transform: uppercase; text-align: center; margin-bottom: 4px; }
+    #apikey-box p { color: #555; font-size: 11px; letter-spacing: 2px; text-align: center; text-transform: uppercase; margin-bottom: 24px; }
+    #apikey-box label { color: #888; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; display: block; margin-bottom: 8px; }
+    #apikey-box input {
+      width: 100%; background: #0d0d0d; border: 1px solid #2a2a2a;
+      color: #e0e0e0; padding: 10px 14px; font-size: 13px;
+      font-family: 'Courier New', monospace; border-radius: 2px; outline: none;
+      transition: border-color 0.2s;
+    }
+    #apikey-box input:focus { border-color: #39ff14; }
+    #apikey-box button {
+      width: 100%; margin-top: 16px; background: #39ff14; border: none;
+      color: #000; padding: 12px; font-size: 13px; font-weight: bold;
+      font-family: 'Courier New', monospace; letter-spacing: 2px;
+      text-transform: uppercase; cursor: pointer; border-radius: 2px;
+      transition: opacity 0.2s;
+    }
+    #apikey-box button:hover { opacity: 0.85; }
+    #apikey-box .note { color: #444; font-size: 10px; margin-top: 14px; text-align: center; line-height: 1.6; }
+    #apikey-box .note a { color: #39ff14; text-decoration: none; }
+  </style>
+</head>
+<body>
+
+<!-- API Key Screen -->
+<div id="apikey-screen">
+  <div id="apikey-box">
+    <div class="logo">🏍️</div>
+    <h2>Kawasaki Ninja</h2>
+    <p>Expert Mécanique — Canada 2025</p>
+    <label>Clé API Anthropic</label>
+    <input type="password" id="apikey-input" placeholder="sk-ant-..." />
+    <button onclick="startApp()">Démarrer</button>
+    <p class="note">
+      Votre clé n'est pas sauvegardée.<br/>
+      Obtenez une clé sur <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>
+    </p>
+  </div>
+</div>
+
+<!-- App Root -->
+<div id="root" style="display:none; height:100vh;"></div>
+
+<script type="text/babel">
+  const { useState, useRef, useEffect } = React;
+
+  const SYSTEM_PROMPT = `Tu es un expert mécanicien spécialisé exclusivement dans la Kawasaki Ninja, modèle 2025, dans toutes ses variantes disponibles AU CANADA (ZX-4RR, ZX-6R, ZX-10R, ZX-10RR, ZX-10RSE, H2, H2R, H2 Carbon, Z H2, H2 SX).
+
+## Contexte géographique — Canada uniquement
+- Tu fournis des informations EXCLUSIVEMENT adaptées au marché canadien (Kawasaki Canada).
+- Tu mentionnes les prix en dollars canadiens (CAD) lorsque pertinent.
+- Tu fais référence aux concessionnaires et ateliers agréés Kawasaki Canada.
+- Tu tiens compte des réglementations provinciales canadiennes (immatriculation, SAAQ au Québec, MTO en Ontario, ICBC en C.-B., etc.).
+- Tu mentionnes les conditions climatiques canadiennes (hivernage, entreposage, démarrage par temps froid, fluides adaptés au grand froid).
+- Tu indiques les spécificités des modèles homologués pour le Canada (différences éventuelles avec les versions US ou Europe).
+- Si la question concerne un autre pays, tu rappelles poliment que ton expertise est limitée au marché canadien.
+
+## Ton profil
+- Plus de 20 ans d'expérience en mécanique moto haute performance
+- Formé chez Kawasaki Heavy Industries au Japon
+- Spécialiste des moteurs 4 cylindres en ligne, bicylindres et suralimentés Kawasaki
+- Maîtrise parfaite du système de suralimentation centrifuge du H2 / H2R
+- Expert en électronique embarquée Kawasaki (KIBS, KTRC, KQS, KLCM, KEBC, IMU 6 axes)
+- Connaissance approfondie des systèmes Kawasaki Cornering Management Function (KCMF)
+- Certifié Kawasaki Diagnosis System (KDS)
+
+## Tes domaines d'expertise
+
+### Mécanique moteur
+- Architecture moteur (distributions, culasses, pistons, vilebrequin, boîte de vitesses)
+- Système de suralimentation (compresseur centrifuge H2/H2R, intercooler, gestion de pression)
+- Entretien préventif et intervalles de service (vidanges, filtres, bougies, courroies/chaînes de distribution)
+- Diagnostic de pannes mécaniques (bruits, vibrations, pertes de performance)
+- Réglages carburateur/injection (FI system, ECU mapping)
+- Culasse et rodage moteur
+
+### Systèmes électroniques & Riding Modes
+- Modes de conduite (Road, Rain, Sport, Track, Rider — selon variante)
+- Kawasaki Intelligent anti-lock Brake System (KIBS)
+- Kawasaki Traction Control (KTRC)
+- Kawasaki Launch Control Mode (KLCM)
+- Kawasaki Quick Shifter (KQS up/down)
+- Kawasaki Engine Brake Control (KEBC)
+- Kawasaki Cornering Management Function (KCMF)
+- Centrale inertielle 6 axes IMU (Bosch)
+- Tableau de bord TFT 4.3" / 5" et connectivité Bluetooth (RIDEOLOGY THE APP)
+
+### Châssis & Suspensions
+- Cadre Trellis / aluminium / acier haute résistance selon modèle
+- Fourches conventionnelles, inversées (Showa BFF, KYB)
+- Amortisseurs arrière (Uni-Trak, amortisseur Öhlins sur versions SE)
+- Réglages suspensions (précharge, compression, détente)
+- Géométrie et chasse
+
+### Freinage
+- Étriers Brembo M4.32 / Nissin selon version
+- Disques flottants, fixes
+- Entretien (purge, remplacement plaquettes/disques)
+
+### Transmission & Embrayage
+- Embrayage à bain d'huile anti-dribble (slipper clutch)
+- Transmission primaire et secondaire (réglage chaîne, pignons)
+
+### Entretien & Diagnostics
+- Lecture et effacement des codes défauts via KDS
+- Planning d'entretien officiel Kawasaki 2025
+- Couples de serrage et spécifications techniques
+- Fluides recommandés (huile moteur, liquide de frein, liquide de refroidissement)
+
+## Tes règles de réponse
+1. Réponds UNIQUEMENT sur la Kawasaki Ninja 2025 pour le marché canadien — si la question concerne une autre moto, une autre marque ou un autre pays, redirige poliment vers ton domaine.
+2. Tu t'adresses à un public grand public et amateur — vulgarise les termes techniques, évite le jargon, et explique les concepts de base si nécessaire.
+3. Utilise des analogies simples pour expliquer les mécanismes complexes (ex. moteur, suspension, freinage).
+4. Décompose toujours les procédures en étapes claires et numérotées, faciles à suivre.
+5. Indique toujours quand une intervention est faisable par un amateur et quand elle dépasse ce niveau — recommande alors un atelier agréé Kawasaki Canada.
+6. Rappelle systématiquement de consulter le manuel du propriétaire Kawasaki avant toute intervention.
+7. Mentionne les intervalles d'entretien officiels Kawasaki Canada de façon simple et mémorisable.
+8. En cas de sécurité critique (freins, direction, moteur H2 turbo), sois très explicite sur les risques et déconseille fermement toute intervention amateur.
+9. Inclure toujours cet avertissement de responsabilité en fin de réponse technique : "⚠️ Ces informations sont fournies à titre indicatif. Pour toute intervention critique, consultez un technicien certifié Kawasaki Canada."
+10. Rappelle la garantie Kawasaki Canada lorsque pertinent (ce qui peut l'annuler, durée, conditions).
+11. Réponds en français par défaut (marché québécois), ou en anglais si l'utilisateur écrit en anglais (marché anglophone canadien).
+12. Tiens toujours compte des conditions canadiennes : hivernage, températures extrêmes, routes salées, et recommande les produits/fluides adaptés.
+
+Tu es le guide de confiance pour tout propriétaire ou passionné canadien de la Kawasaki Ninja 2025, qu'il soit débutant ou amateur éclairé.`;
+
+  const SUGGESTED_QUESTIONS = [
+    "Comment faire la vidange moi-même ?",
+    "Comment hiverner ma Ninja au Canada ?",
+    "Ma garantie Kawasaki Canada couvre quoi ?",
+    "Comment vérifier ma chaîne de transmission ?",
+    "Quand dois-je changer mes plaquettes de frein ?",
+  ];
+
+  function App({ apiKey }) {
+    const [messages, setMessages] = useState([]);
+    const [input, setInput] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [showPrompt, setShowPrompt] = useState(false);
+    const bottomRef = useRef(null);
+
+    useEffect(() => {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, [messages, loading]);
+
+    const sendMessage = async (text) => {
+      const userText = text || input.trim();
+      if (!userText || loading) return;
+      setInput("");
+
+      const newMessages = [...messages, { role: "user", content: userText }];
+      setMessages(newMessages);
+      setLoading(true);
+
+      try {
+        const response = await fetch("https://api.anthropic.com/v1/messages", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": apiKey,
+            "anthropic-version": "2023-06-01",
+            "anthropic-dangerous-direct-browser-access": "true"
+          },
+          body: JSON.stringify({
+            model: "claude-sonnet-4-20250514",
+            max_tokens: 1000,
+            system: SYSTEM_PROMPT,
+            messages: newMessages,
+          }),
+        });
+        const data = await response.json();
+        const reply = data.content?.map((b) => b.text || "").join("\n") || "Erreur de réponse.";
+        setMessages([...newMessages, { role: "assistant", content: reply }]);
+      } catch {
+        setMessages([...newMessages, { role: "assistant", content: "❌ Erreur de connexion à l'API." }]);
+      }
+      setLoading(false);
+    };
+
+    return (
+      <div style={{
+        height: "100vh",
+        background: "#0a0a0a",
+        fontFamily: "'Courier New', monospace",
+        color: "#e0e0e0",
+        display: "flex",
+        flexDirection: "column",
+      }}>
+        {/* Header */}
+        <div style={{
+          background: "linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%)",
+          borderBottom: "2px solid #39ff14",
+          padding: "20px 24px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          boxShadow: "0 0 30px rgba(57,255,20,0.15)",
+          flexShrink: 0,
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+            <div style={{
+              width: 48, height: 48,
+              background: "#39ff14",
+              borderRadius: "4px",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 26,
+              boxShadow: "0 0 20px rgba(57,255,20,0.5)",
+            }}>🏍️</div>
+            <div>
+              <div style={{ fontSize: 20, fontWeight: "bold", color: "#39ff14", letterSpacing: 3, textTransform: "uppercase" }}>
+                KAWASAKI NINJA
+              </div>
+              <div style={{ fontSize: 11, color: "#666", letterSpacing: 5, textTransform: "uppercase" }}>
+                Expert Mécanique — Canada 2025
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowPrompt(!showPrompt)}
+            style={{
+              background: "transparent",
+              border: "1px solid #39ff14",
+              color: "#39ff14",
+              padding: "6px 14px",
+              cursor: "pointer",
+              fontSize: 11,
+              letterSpacing: 2,
+              textTransform: "uppercase",
+              borderRadius: 2,
+              transition: "all 0.2s",
+            }}
+          >
+            {showPrompt ? "▲ Masquer" : "▼ System Prompt"}
+          </button>
+        </div>
+
+        {/* System Prompt Panel */}
+        {showPrompt && (
+          <div style={{
+            background: "#111",
+            borderBottom: "1px solid #333",
+            padding: "16px 24px",
+            maxHeight: 220,
+            overflowY: "auto",
+            flexShrink: 0,
+          }}>
+            <div style={{ fontSize: 10, color: "#39ff14", letterSpacing: 3, marginBottom: 8, textTransform: "uppercase" }}>
+              ◈ System Prompt Actif
+            </div>
+            <pre style={{
+              fontSize: 11, color: "#888", lineHeight: 1.6,
+              whiteSpace: "pre-wrap", margin: 0,
+              fontFamily: "'Courier New', monospace",
+            }}>
+              {SYSTEM_PROMPT}
+            </pre>
+          </div>
+        )}
+
+        {/* Suggestions */}
+        {messages.length === 0 && (
+          <div style={{ padding: "32px 24px 0", flexShrink: 0 }}>
+            <div style={{ fontSize: 11, color: "#555", letterSpacing: 3, marginBottom: 16, textTransform: "uppercase" }}>
+              ◈ Questions suggérées
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+              {SUGGESTED_QUESTIONS.map((q, i) => (
+                <button
+                  key={i}
+                  onClick={() => sendMessage(q)}
+                  style={{
+                    background: "#141414",
+                    border: "1px solid #2a2a2a",
+                    color: "#aaa",
+                    padding: "8px 14px",
+                    cursor: "pointer",
+                    fontSize: 12,
+                    borderRadius: 2,
+                    transition: "all 0.2s",
+                    textAlign: "left",
+                    fontFamily: "'Courier New', monospace",
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = "#39ff14"; e.currentTarget.style.color = "#39ff14"; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = "#2a2a2a"; e.currentTarget.style.color = "#aaa"; }}
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
+            <div style={{
+              marginTop: 40,
+              textAlign: "center",
+              color: "#1e1e1e",
+              fontSize: 11,
+              lineHeight: 1.4,
+              letterSpacing: 1,
+              userSelect: "none",
+              whiteSpace: "pre",
+            }}>
+              {`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n       KAWASAKI  //  LET THE GOOD TIMES ROLL\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`}
+            </div>
+          </div>
+        )}
+
+        {/* Messages */}
+        <div style={{ flex: 1, overflowY: "auto", padding: "24px", display: "flex", flexDirection: "column", gap: 16 }}>
+          {messages.map((m, i) => (
+            <div key={i} style={{
+              display: "flex",
+              justifyContent: m.role === "user" ? "flex-end" : "flex-start",
+            }}>
+              <div style={{
+                maxWidth: "75%",
+                background: m.role === "user"
+                  ? "linear-gradient(135deg, #1a2e1a, #0d1a0d)"
+                  : "#141414",
+                border: m.role === "user"
+                  ? "1px solid #39ff14"
+                  : "1px solid #252525",
+                borderRadius: m.role === "user" ? "8px 2px 8px 8px" : "2px 8px 8px 8px",
+                padding: "12px 16px",
+                fontSize: 13,
+                lineHeight: 1.7,
+                color: m.role === "user" ? "#c8ffaa" : "#d0d0d0",
+                boxShadow: m.role === "user" ? "0 0 10px rgba(57,255,20,0.1)" : "none",
+                whiteSpace: "pre-wrap",
+              }}>
+                {m.role === "assistant" && (
+                  <div style={{ fontSize: 10, color: "#39ff14", letterSpacing: 2, marginBottom: 6, textTransform: "uppercase" }}>
+                    ◈ Expert Kawasaki Canada 2025
+                  </div>
+                )}
+                {m.content}
+              </div>
+            </div>
+          ))}
+
+          {loading && (
+            <div style={{ display: "flex", justifyContent: "flex-start" }}>
+              <div style={{
+                background: "#141414",
+                border: "1px solid #252525",
+                borderRadius: "2px 8px 8px 8px",
+                padding: "12px 18px",
+                fontSize: 13,
+              }}>
+                <div style={{ fontSize: 10, color: "#39ff14", letterSpacing: 2, marginBottom: 6, textTransform: "uppercase" }}>
+                  ◈ Expert Kawasaki Canada 2025
+                </div>
+                <span style={{ color: "#39ff14", animation: "blink 1s infinite" }}>▌</span>
+                <span style={{ color: "#555", fontSize: 11 }}> Analyse en cours...</span>
+              </div>
+            </div>
+          )}
+          <div ref={bottomRef} />
+        </div>
+
+        {/* Input */}
+        <div style={{
+          background: "#0d0d0d",
+          borderTop: "1px solid #222",
+          padding: "16px 24px",
+          display: "flex",
+          gap: 10,
+          flexShrink: 0,
+        }}>
+          <input
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && !e.shiftKey && sendMessage()}
+            placeholder="Posez votre question mécanique Kawasaki Ninja 2025 — Canada..."
+            disabled={loading}
+            style={{
+              flex: 1,
+              background: "#141414",
+              border: "1px solid #2a2a2a",
+              borderRadius: 2,
+              color: "#e0e0e0",
+              padding: "10px 16px",
+              fontSize: 13,
+              outline: "none",
+              fontFamily: "'Courier New', monospace",
+              transition: "border-color 0.2s",
+            }}
+            onFocus={e => e.target.style.borderColor = "#39ff14"}
+            onBlur={e => e.target.style.borderColor = "#2a2a2a"}
+          />
+          <button
+            onClick={() => sendMessage()}
+            disabled={loading || !input.trim()}
+            style={{
+              background: loading || !input.trim() ? "#1a1a1a" : "#39ff14",
+              border: "none",
+              borderRadius: 2,
+              color: loading || !input.trim() ? "#444" : "#000",
+              padding: "10px 20px",
+              cursor: loading || !input.trim() ? "not-allowed" : "pointer",
+              fontSize: 13,
+              fontWeight: "bold",
+              fontFamily: "'Courier New', monospace",
+              letterSpacing: 2,
+              transition: "all 0.2s",
+              textTransform: "uppercase",
+            }}
+          >
+            {loading ? "..." : "Envoyer"}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Will be set by startApp()
+  window.__renderApp = function(apiKey) {
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App apiKey={apiKey} />);
+  };
+</script>
+
+<script>
+  function startApp() {
+    const key = document.getElementById('apikey-input').value.trim();
+    if (!key.startsWith('sk-ant-')) {
+      alert('Clé API invalide. Elle doit commencer par "sk-ant-"');
+      return;
+    }
+    document.getElementById('apikey-screen').style.display = 'none';
+    document.getElementById('root').style.display = 'block';
+    window.__renderApp(key);
+  }
+
+  // Allow Enter key on the API key input
+  document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('apikey-input').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') startApp();
+    });
+  });
+</script>
+
+</body>
+</html>
